@@ -23,7 +23,7 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc libcutils
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-LOCAL_MODULE_PATH := $(PRODUCT_OUT)/safestrap
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_OUT)/root/../../install-files/etc/safestrap
 
 include $(BUILD_EXECUTABLE)
 
