@@ -30,13 +30,13 @@ PRODUCT_COPY_FILES += \
 
 # Recovery files
 PRODUCT_COPY_FILES += \
-    $(COMMON_FOLDER)/sbin/update-binary:$(TARGET_RECOVERY_OUT)/root/sbin/update-binary
+    $(COMMON_FOLDER)/sbin/update-binary:$(TARGET_RECOVERY_OUT)/root/sbin/update-binary \
+    $(COMMON_FOLDER)/sbin/bbx:$(TARGET_RECOVERY_OUT)/root/sbin/bbx \
 
 # Add battd
 ifdef BOARD_IS_MOTOROLA_DEVICE
 PRODUCT_COPY_FILES += \
     $(COMMON_FOLDER)/sbin/battd:$(TARGET_RECOVERY_OUT)/root/sbin/battd \
-    $(COMMON_FOLDER)/sbin/bbx:$(TARGET_RECOVERY_OUT)/root/sbin/bbx \
     $(COMMON_FOLDER)/sbin/libhardware_legacy.so:$(TARGET_RECOVERY_OUT)/root/sbin/libhardware_legacy.so \
     $(COMMON_FOLDER)/sbin/libnetutils.so:$(TARGET_RECOVERY_OUT)/root/sbin/libnetutils.so \
     $(COMMON_FOLDER)/sbin/libwpa_client.so:$(TARGET_RECOVERY_OUT)/root/sbin/libwpa_client.so
