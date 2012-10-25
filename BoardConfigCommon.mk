@@ -9,7 +9,7 @@ ARCH_ARM_HAVE_TLS_REGISTER := true
 TARGET_NO_BOOTLOADER := true
 
 # Recovery
-TARGET_PREBUILT_KERNEL := device/safestrap/kernel
+TARGET_PREBUILT_KERNEL := device/generic/safestrap/kernel
 BOARD_ALWAYS_INSECURE := true
 BOARD_HAS_LARGE_FILESYSTEM := true
 
