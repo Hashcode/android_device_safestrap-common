@@ -31,7 +31,6 @@ PRODUCT_COPY_FILES += \
 # Recovery files
 PRODUCT_COPY_FILES += \
     $(COMMON_FOLDER)/sbin/update-binary:$(TARGET_RECOVERY_OUT)/root/sbin/update-binary \
-    $(COMMON_FOLDER)/sbin/bbx:$(TARGET_RECOVERY_OUT)/root/sbin/bbx \
 
 # Add battd
 ifdef BOARD_IS_MOTOROLA_DEVICE
