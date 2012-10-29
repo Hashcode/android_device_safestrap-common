@@ -14,7 +14,7 @@ SS_PART=mmcblk0p12
 RECOVERY_DIR=/system/etc/safestrap
 SS_DIR=$SS_MNT/safestrap
 ALT_SYSTEM_MODE="0"
-BOOTMODE=$(getprop ro.bootmode)
+HIJACK_BIN=logwrapper
 
 
 if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
@@ -114,14 +114,9 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 
 		# unmount partitions
 		/sbin/bbx umount /system
+		/sbin/bbx umount $SS_MNT
 
 		/sbin/hijack.killall
-
-		/sbin/ps > $SS_DIR/boot.log
-		/sbin/ls -l / >> $SS_DIR/boot.log
-		/sbin/mount >> $SS_DIR/boot.log
-
-		/sbin/bbx umount $SS_MNT
 
 		/sbin/taskset -p -c 0 1
 		/sbin/bbx sync
@@ -212,5 +207,5 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 	/sbin/bbx umount $SS_MNT
 fi
 
-/system/bin/logwrapper.bin "$@"
+/system/bin/$HIJACK_BIN.bin "$@"
 
