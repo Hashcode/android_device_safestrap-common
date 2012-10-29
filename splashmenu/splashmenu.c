@@ -60,7 +60,7 @@ static int wait_key(int key, int skipkey) {
   int result = 0;
   int keyp = 0;
 
-  evt_init();
+//  evt_init();
   for(i=0; i < 400; i++) {
     keyp = ui_key_pressed(key, skipkey);
     if(keyp != 0) {
@@ -71,10 +71,9 @@ static int wait_key(int key, int skipkey) {
       usleep(20000); //20ms * 400 = 8sec
     }
   }
-  evt_exit();
+//  evt_exit();
   return result;
 }
-
 
 
 int main(int argc, char **argv) {

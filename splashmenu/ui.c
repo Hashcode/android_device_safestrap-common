@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/reboot.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
@@ -31,14 +30,21 @@
 
 #ifndef MAX_ROWS
 #define MAX_COLS 96
-#define MAX_ROWS 40
+#define MAX_ROWS 50
 #endif
+
+#define MENU_MAX_COLS 50
+#define MENU_MAX_ROWS 500
 
 #define CHAR_WIDTH 10
 #define CHAR_HEIGHT 18
 
+//void gui_print(const char *fmt, ...);
+//void gui_print_overwrite(const char *fmt, ...);
+
 static pthread_mutex_t gUpdateMutex = PTHREAD_MUTEX_INITIALIZER;
 static gr_surface gBackgroundIcon[NUM_BACKGROUND_ICONS];
+static int gUiInitialized = 0;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gBackgroundIcon[BACKGROUND_DEFAULT], "background-nonsafe" },
@@ -56,20 +62,18 @@ static int gPagesIdentical = 0;
 static char text[MAX_ROWS][MAX_COLS];
 static int text_cols = 0, text_rows = 0;
 static int text_col = 0, text_row = 0, text_top = 0;
-static int show_text = 0;
-static int show_text_ever = 0;   // has show_text ever been 1?
+static int show_text = 1;
 
-static char menu[MAX_ROWS][MAX_COLS];
+static char menu[MENU_MAX_ROWS][MENU_MAX_COLS]; //allows menu to hold more than stock default 32 rows
 static int show_menu = 0;
 static int menu_top = 0, menu_items = 0, menu_sel = 0;
-static int menu_show_start = 0;             // this is line which menu display is starting at
+static int menu_show_start = 0; ////line count of where the menu starts to be drawn
 
 // Key event input queue
 static pthread_mutex_t key_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t key_queue_cond = PTHREAD_COND_INITIALIZER;
 static int key_queue[256], key_queue_len = 0;
 static volatile char key_pressed[KEY_MAX + 1];
-static int evt_enabled = 0;
 
 // Clear the screen and draw the currently selected background icon (if any).
 // Should only be called with gUpdateMutex locked.
@@ -90,7 +94,7 @@ static void draw_background_locked(gr_surface icon)
 
 static void draw_text_line(int row, const char* t) {
   if (t[0] != '\0') {
-    gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
+    gr_text(0, row*CHAR_HEIGHT+1, t);
   }
 }
 
@@ -99,35 +103,56 @@ static void draw_text_line(int row, const char* t) {
 static void draw_screen_locked(void)
 {
     draw_background_locked(gCurrentIcon);
-
     if (show_text) {
         gr_color(0, 0, 0, 160);
         gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
-        int i = 0;
+        int i = 0, j = 0;
+        int k = menu_top + 1; //counter for bottom horizontal text line location
         if (show_menu) {
-            gr_color(64, 96, 255, 255);
-            gr_fill(0, (menu_top+menu_sel) * CHAR_HEIGHT,
-                    gr_fb_width(), (menu_top+menu_sel+1)*CHAR_HEIGHT+1);
 
-            for (; i < menu_top + menu_items; ++i) {
-                if (i == menu_top + menu_sel) {
-                    gr_color(255, 255, 255, 255);
-                    draw_text_line(i, menu[i]);
-                    gr_color(64, 96, 255, 255);
-                } else {
-                    draw_text_line(i, menu[i]);
-                }
+            //menu line item selection highlight draws
+            gr_color(255, 255, 255, 255);
+            gr_fill(0, (menu_top + menu_sel - menu_show_start+1) * CHAR_HEIGHT,
+                    gr_fb_width(), CHAR_HEIGHT+1);
+
+            //draw semi-static headers
+            for (i = 0; i < menu_top; ++i) {
+                gr_color(200, 200, 200, 200);
+                draw_text_line(i, menu[i]);
+                //LOGI("Semi-static headers internal counter i: %i\n", i);
             }
-            gr_fill(0, i*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
-                    gr_fb_width(), i*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
-            ++i;
+
+            //adjust counter for current position of selection and menu display starting point
+            if (menu_items - menu_show_start + menu_top >= text_rows){
+                j = text_rows - menu_top;
+                //LOGI("j = text_rows - mneu_top and j = %i\n", j);
+           } else {
+                j = menu_items - menu_show_start;
+                //LOGI("j = mneu_items - menu_show_start and j = %i\n", j);
+           }
+            //LOGI("outside draw menu items for loop and i goes until limit. limit-menu_show_start + menu_top + j = %i\n", menu_show_start + menu_top + j);
+            //draw menu items dynamically based on current menu starting position, menu selection point and headers
+             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
+                //LOGI("inside draw menu items for loop and i = %i\n", i);
+                if (i == menu_top + menu_sel) {
+                    gr_color(200, 200, 200, 200);
+                    //LOGI("draw_text_line -menu_item_when_highlighted_color- at i + 1= %i\n", i+1);
+                    draw_text_line(i - menu_show_start +1, menu[i]);
+                } else {
+                    gr_color(200, 200, 200, 200);
+                    //LOGI("draw_text_line -menu_item_color- at i + 1= %i\n", i+1);
+                    draw_text_line(i - menu_show_start +1, menu[i]);
+                }
+                //LOGI("inside draw menu items for loop and k = %i\n", k);
+                k++;
+            }
         }
 
-        gr_color(255, 255, 0, 255);
-
-        for (; i < text_rows; ++i) {
-            draw_text_line(i, text[(i+text_top) % text_rows]);
+        k++; //keep ui_print below menu items display
+        gr_color(200, 200, 200, 200); //called by at least ui_print
+        for (; k < text_rows; ++k) {
+            draw_text_line(k, text[(k+text_top) % text_rows]);
         }
     }
 }
@@ -136,6 +161,7 @@ static void draw_screen_locked(void)
 // Should only be called with gUpdateMutex locked.
 static void update_screen_locked(void)
 {
+    if (!gUiInitialized)    return;
     draw_screen_locked();
     gr_flip();
 }
@@ -143,11 +169,9 @@ static void update_screen_locked(void)
 // Reads input events, handles special hot keys, and adds to the key queue.
 static void *input_thread(void *cookie)
 {
-    LOGW("input_thread: start\n");
     int rel_sum = 0;
     int fake_key = 0;
     for (;;) {
-        LOGW("input_thread: wait for key\n");
         // wait for the next key event
         struct input_event ev;
         do {
@@ -162,6 +186,7 @@ static void *input_thread(void *cookie)
                     // (positive or negative), fake an up/down
                     // key event.
                     rel_sum += ev.value;
+
                     if (rel_sum > 3) {
                         fake_key = 1;
                         ev.type = EV_KEY;
@@ -202,30 +227,8 @@ static void *input_thread(void *cookie)
             update_screen_locked();
             pthread_mutex_unlock(&gUpdateMutex);
         }
-
-        if (ev.value > 0 && device_reboot_now(key_pressed, ev.code)) {
-            reboot(RB_AUTOBOOT);
-        }
     }
     return NULL;
-}
-
-int ui_create_bitmaps()
-{
-    int i, result=0;
-
-    for (i = 0; BITMAPS[i].name != NULL; ++i) {
-        result = res_create_surface(BITMAPS[i].name, BITMAPS[i].surface);
-        if (result < 0) {
-            if (result == -2) {
-                LOGI("Bitmap %s missing header\n", BITMAPS[i].name);
-            } else {
-                LOGE("Missing bitmap %s\n(Code %d)\n", BITMAPS[i].name, result);
-            }
-            *BITMAPS[i].surface = NULL;
-        }
-    }
-    return result;
 }
 
 void ui_init(void)
@@ -241,54 +244,28 @@ void ui_init(void)
     text_cols = gr_fb_width() / CHAR_WIDTH;
     if (text_cols > MAX_COLS - 1) text_cols = MAX_COLS - 1;
 
-    ui_create_bitmaps();
-
-    pthread_t t;
-
-    LOGW("ui_init: pre input_thread\n");
-    pthread_create(&t, NULL, input_thread, NULL);
-    LOGW("ui_init: post input_thread\n");
-    evt_enabled = 1;
-}
-
-void ui_free_bitmaps(void)
-{
     int i;
-
-    //free bitmaps
     for (i = 0; BITMAPS[i].name != NULL; ++i) {
-        if (BITMAPS[i].surface != NULL) {
-
-            ui_print("free bitmap %d @ %x\n", i, (unsigned) BITMAPS[i].surface);
-
-            res_free_surface(BITMAPS[i].surface);
+        int result = res_create_surface(BITMAPS[i].name, BITMAPS[i].surface);
+        if (result < 0) {
+            if (result == -2) {
+                LOGI("Bitmap %s missing header\n", BITMAPS[i].name);
+            } else {
+                LOGE("Missing bitmap %s\n(Code %d)\n", BITMAPS[i].name, result);
+            }
+            *BITMAPS[i].surface = NULL;
         }
     }
-}
 
+    pthread_t t;
+    pthread_create(&t, NULL, input_thread, NULL);
 
-void evt_init(void)
-{
-    ev_init();
-
-    if (!evt_enabled) {
-       pthread_t t;
-       pthread_create(&t, NULL, input_thread, NULL);
-       evt_enabled = 1;
-    }
-}
-
-void evt_exit(void)
-{
-    if (evt_enabled) {
-      ev_exit();
-    }
-    evt_enabled = 0;
+    gUiInitialized = 1;
 }
 
 void ui_final(void)
 {
-    evt_exit();
+//    evt_exit();
 
     ui_show_text(0);
     gr_exit();
@@ -304,11 +281,17 @@ void ui_set_background(int icon)
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
-void ui_print_str(char *str) {
-    char buf[256];
+void ui_print(const char *fmt, ...)
+{
+    char buf[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, 512, fmt, ap);
+    va_end(ap);
 
-    strncpy(buf, str, 255);
     fputs(buf, stdout);
+
+//    gui_print("%s", buf);
 
     // This can get called before ui_init(), so be careful.
     pthread_mutex_lock(&gUpdateMutex);
@@ -327,18 +310,40 @@ void ui_print_str(char *str) {
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
-
 }
 
-void ui_print(const char *fmt, ...)
+void ui_print_overwrite(const char *fmt, ...)
 {
     char buf[256];
     va_list ap;
     va_start(ap, fmt);
-    vsnprintf(buf, 256, fmt, ap);
+    vsnprintf(buf, (text_cols - 1), fmt, ap);
     va_end(ap);
+    //LOGI("ui_print_overwrite - starting text row %i\n", text_row);
+    fputs(buf, stdout);
 
-    ui_print_str(buf);
+//    gui_print_overwrite("%s", buf);
+
+    text_col = 0;
+    // This can get called before ui_init(), so be careful.
+    pthread_mutex_lock(&gUpdateMutex);
+    if (text_rows > 0 && text_cols > 0) {
+        char *ptr;
+        for (ptr = buf; *ptr != '\0'; ++ptr) {
+            if (*ptr == '\n' || text_col >= text_cols) {
+                text[text_row][text_col] = '\0';
+                text_col = 0;
+                text_row = (text_row + 1) % text_rows;
+                if (text_row == text_top) text_top = (text_top + 1) % text_rows;
+            }
+            if (*ptr != '\n') text[text_row][text_col++] = *ptr;
+        }
+        text[text_row][text_col] = '\0';
+        // had to comment out as it was being thrown into the output
+		//LOGI("ui_print_overwrite - ending text row %i    ending text col%i\n", text_row, text_col); 
+        update_screen_locked();
+    }
+    pthread_mutex_unlock(&gUpdateMutex);
 }
 
 void ui_start_menu(char** headers, char** items, int initial_selection) {
@@ -347,18 +352,29 @@ void ui_start_menu(char** headers, char** items, int initial_selection) {
     if (text_rows > 0 && text_cols > 0) {
         for (i = 0; i < text_rows; ++i) {
             if (headers[i] == NULL) break;
-            strncpy(menu[i], headers[i], text_cols-1);
+            strncpy(menu[i], headers[i], text_cols-1); //copy in all headers[i] to menu[i]
             menu[i][text_cols-1] = '\0';
         }
-        menu_top = i;
-        for (; i < text_rows; ++i) {
+        menu_top = i; // from this value and previous of i are headers - this item and greater will be menu items[i]
+        for (; i < MENU_MAX_ROWS; ++i) {
             if (items[i-menu_top] == NULL) break;
             strncpy(menu[i], items[i-menu_top], text_cols-1);
             menu[i][text_cols-1] = '\0';
         }
-        menu_items = i - menu_top;
-        show_menu = 1;
-        menu_sel = initial_selection;
+        menu_items = i - menu_top; //grand count of how many values are actual menu items to exclude header items
+        show_menu = 1; //display the menu
+        menu_sel = initial_selection; // set menu_sel to initial_selection for proper display
+        if (menu_items <= (text_rows - menu_top)) { // this block of if statements sets menu_show_start to display the right section of the menu based on what item was selected - primarily needed when going back up a level in the menus 
+            menu_show_start = 0;
+        } else {
+            menu_show_start = initial_selection - ((text_rows - menu_top) / 2); // this should place the selected item around the middle of the menu selection area
+            if (menu_show_start > (menu_items - (text_rows - menu_top))) {
+                menu_show_start = (menu_items - (text_rows - menu_top)); // makes sure that we are displaying as many menu items as possible in case the selected item is at the bottom of a large list of menu items
+            }
+            if (menu_show_start < 0) {
+                menu_show_start = 0; // prevents menu_show_start from being <0 in case we're close to the top of the menu
+            }
+        }
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
@@ -373,13 +389,11 @@ int ui_menu_select(int sel) {
         if (menu_sel < 0) menu_sel = menu_items + menu_sel;
         if (menu_sel >= menu_items) menu_sel = menu_sel - menu_items;
 
-        if (menu_sel < menu_show_start && menu_show_start > 0) {
-            menu_show_start = menu_sel;
-        }
+        //move the display starting point up the screen as the selection moves up
+        if (menu_show_start > 0 && menu_sel < menu_show_start) menu_show_start = menu_sel;
 
-        if (menu_sel - menu_show_start + menu_top >= text_rows) {
-            menu_show_start = menu_sel + menu_top - text_rows + 1;
-        }
+        //move display starting point down one past the end of the current screen as the selection moves back end of screen
+        if (menu_sel - menu_show_start + menu_top >= text_rows) menu_show_start = menu_sel + menu_top - text_rows + 1;
 
         sel = menu_sel;
         if (menu_sel != old_sel) update_screen_locked();
@@ -416,17 +430,14 @@ void ui_show_text(int visible)
 
 int ui_wait_key()
 {
-    int key;
-
     pthread_mutex_lock(&key_queue_mutex);
     while (key_queue_len == 0) {
         pthread_cond_wait(&key_queue_cond, &key_queue_mutex);
     }
 
-    key = key_queue[0];
+    int key = key_queue[0];
     memcpy(&key_queue[0], &key_queue[1], sizeof(int) * --key_queue_len);
     pthread_mutex_unlock(&key_queue_mutex);
-
     return key;
 }
 

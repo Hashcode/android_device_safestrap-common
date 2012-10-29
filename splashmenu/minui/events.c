@@ -164,9 +164,11 @@ static int vk_init(struct ev *e)
 
     // Some devices split the keys from the touchscreen
     e->vk_count = 0;
+    LOGW("CHECKING FOR: %s\n", vk_path);
     vk_fd = open(vk_path, O_RDONLY);
     if (vk_fd >= 0)
     {
+        LOGW("FOUND: %s\n", vk_path);
         len = read(vk_fd, vks, sizeof(vks)-1);
         close(vk_fd);
         if (len <= 0)
@@ -227,6 +229,7 @@ static int vk_init(struct ev *e)
         e->vks[i].centery = strtol(token[3], NULL, 0);
         e->vks[i].width = strtol(token[4], NULL, 0);
         e->vks[i].height = strtol(token[5], NULL, 0);
+        LOGW("minui: new button: %d, center=%d,%d w,h=%d,%d\n", e->vks[i].scancode, e->vks[i].centerx, e->vks[i].centery, e->vks[i].width, e->vks[i].height);
     }
 
     return 0;

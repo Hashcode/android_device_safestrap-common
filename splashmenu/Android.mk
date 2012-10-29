@@ -18,7 +18,7 @@ LOCAL_SRC_FILES := $(splash_sources)
 LOCAL_CFLAGS += -DMAX_ROWS=44 -DMAX_COLS=96
 
 
-LOCAL_STATIC_LIBRARIES := libminui_bm libpixelflinger_static libpng libz
+LOCAL_STATIC_LIBRARIES := libminui_ss libpixelflinger_static libpng libz
 LOCAL_STATIC_LIBRARIES += libstdc++ libc libcutils
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
