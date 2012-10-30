@@ -46,7 +46,6 @@ service adbd /sbin/adbd recovery
 
 # Always start adbd on userdebug and eng builds
 on property:ro.debuggable=1
-on property:sys.usb.config=mass_storage,adb
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/bDeviceClass 0
     write /sys/class/android_usb/android0/bDeviceSubClass 0

@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 3.10
+# Last Editted: 10/30/2012
 PATH=/system/bin:/system/xbin
 BLOCKNAME_DIR=/dev/block/platform/omap/omap_hsmmc.1/by-name
 SYS_BLOCK=$BLOCKNAME_DIR/systemorig
@@ -51,10 +51,20 @@ if [ ! -f "$DESTMOUNT/bin/$HIJACK_BIN.bin" ]; then
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN.bin >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN.bin >> $LOGFILE
 fi
+# remove any existing hijack files
 $INSTALLPATH/busybox rm $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
+$INSTALLPATH/busybox rm $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
+
+#copy new hijack files
 $INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN $DESTMOUNT/bin >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
+$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN-hijack $DESTMOUNT/bin >> $LOGFILE
+$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
+$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
+
+# this sucks, but have to rename servicemanager
+$INSTALLPATH/busybox mv $DESTMOUNT/bin/servicemanager $DESTMOUNT/bin/servicemanager.bin >> $LOGFILE
 
 # delete any existing /system/etc/safestrap dir
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then

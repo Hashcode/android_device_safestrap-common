@@ -1,0 +1,69 @@
+#!/sbin/bbx sh
+PATH=/sbin
+
+## BEGIN KILL ALL ##
+bbx sleep 1s
+
+# kill all services
+for i in $(getprop | bbx grep init.svc | bbx sed -r 's/^\[init\.svc\.(.+)\]:.*$/\1/'); do
+	echo "stopping ${i}"
+	stop ${i}
+	bbx sleep 1
+done
+
+# unmount /tmp
+echo "umount /tmp"
+for i in $(bbx seq 1 10); do
+	TMP=$(bbx mount | bbx grep /tmp)
+	if bbx [[ -z "$TMP" ]] ; then
+		break
+	fi
+	bbx umount -l /tmp
+	bbx sleep 1
+done
+
+# unmount all yaffs2 partitions
+for i in $(bbx seq 1 10); do
+	TMP=$(bbx mount | bbx grep yaffs2 | bbx awk '{print $3}')
+	if bbx [[ -z "$TMP" ]] ; then
+		break;
+	fi
+	for j in $(bbx mount | bbx grep yaffs2 | bbx awk '{print $3}'); do
+		echo "umount -l $j"
+		bbx umount -l "$j"
+	done
+	bbx sleep 1
+done
+
+# unmount all ext3 partitions
+for i in $(bbx seq 1 10); do
+	TMP=$(bbx mount | bbx grep ext3 | bbx awk '{print $3}')
+	if bbx [[ -z "$TMP" ]] ; then
+		break;
+	fi
+	for j in $(bbx mount | bbx grep ext3 | bbx awk '{print $3}'); do
+		bbx umount -l "$j"
+	done
+	bbx sleep 1
+done
+
+# unmount all ext4 partitions
+for i in $(bbx seq 1 10); do
+	TMP=$(bbx mount | bbx grep ext4 | bbx awk '{print $3}')
+	if bbx [[ -z "$TMP" ]] ; then
+		break;
+	fi
+	for j in $(bbx mount | bbx grep ext4 | bbx awk '{print $3}'); do
+		bbx umount -l "$j"
+	done
+	bbx sleep 1
+done
+
+# kill any existing adbd processes
+bbx kill $(bbx ps | bbx grep adbd)
+#bbx echo "msc_adb" > /dev/usb_device_mode
+bbx kill -s KILL `bbx ps | bbx grep ueventd | bbx head -n 1 | bbx sed 's_ root       [0-9]* [A-Z]    /sbin/ueventd__'`
+
+# try to remove our sockets!
+bbx rm -f /dev/socket/*
+

@@ -16,7 +16,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     $(COMMON_FOLDER)/sbin/2nd-init:$(TARGET_RECOVERY_OUT)/root/../2nd-init-files/2nd-init \
     $(COMMON_FOLDER)/sbin/getprop:$(TARGET_RECOVERY_OUT)/root/../2nd-init-files/getprop \
-    $(COMMON_FOLDER)/sbin/hijack.killall:$(TARGET_RECOVERY_OUT)/root/../2nd-init-files/hijack.killall \
+    $(COMMON_FOLDER)/sbin/hijack.killall.ext4:$(TARGET_RECOVERY_OUT)/root/../2nd-init-files/hijack.killall \
     $(COMMON_FOLDER)/sbin/stop:$(TARGET_RECOVERY_OUT)/root/../2nd-init-files/stop \
     $(COMMON_FOLDER)/sbin/taskset:$(TARGET_RECOVERY_OUT)/root/../2nd-init-files/taskset \
 

@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 3.10
+# Last Editted: 10/27/2012
 PATH=/system/bin:/system/xbin
 BLOCKNAME_DIR=/dev/block/platform/omap/omap_hsmmc.1/by-name
 SYS_BLOCK=$BLOCKNAME_DIR/systemorig
@@ -41,6 +41,12 @@ if [ -f "$DESTMOUNT/bin/$HIJACK_BIN.bin" ]; then
 	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/$HIJACK_BIN.bin $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
+fi
+if [ -f "$DESTMOUNT/bin/$HIJACK_BIN-hijack" ]; then
+	$INSTALLPATH/busybox rm $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
+fi
+if [ ! -f "$DESTMOUNT/bin/servicemanager" ]; then
+	$INSTALLPATH/busybox mv $DESTMOUNT/bin/servicemanager.bin servicemanager >> $LOGFILE
 fi
 
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then

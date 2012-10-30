@@ -40,6 +40,9 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 		/sbin/bbx mkdir $SYS2_MNT
 		/sbin/bbx chown 0.2000 $SYS2_MNT
 		/sbin/bbx chmod 777 $SYS2_MNT
+		/sbin/bbx mkdir $USER2_MNT
+		/sbin/bbx chown 0.2000 $USER2_MNT
+		/sbin/bbx chmod 777 $USER2_MNT
 
 		# mount safestrap partition
 		/sbin/bbx mount -t $IMG_TYPE $BLOCKNAME_DIR/$SS_PART $USER2_MNT
