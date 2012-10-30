@@ -113,7 +113,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 		/sbin/bbx echo $BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name/boot=/dev/null >> $SS_DIR/translate
 
 		# unmount partitions
-		/sbin/bbx umount /system
+		/sbin/bbx umount -l /system
 		/sbin/bbx umount $SS_MNT
 
 		/sbin/hijack.killall
@@ -148,6 +148,9 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 			# unmount new /system
 			/sbin/bbx umount $SYS_MNT
 			/sbin/bbx losetup -d $BLOCK_DIR/loop7
+			# unmount old /system
+			/sbin/bbx umount -l /system
+			# unmount safestrap
 			/sbin/bbx umount $SS_MNT
 
 			/sbin/hijack.killall
