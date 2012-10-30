@@ -11,6 +11,11 @@ INSTALLPATH=$1
 RECOVERY_DIR=/etc/safestrap
 LOGFILE=$INSTALLPATH/action-install.log
 
+BOARD_NAME=`getprop ro.product.board`
+if [ ! "$BOARD_NAME" = "otter" ]; then
+	exit 1
+fi
+
 chmod 755 $INSTALLPATH/busybox
 
 echo "install path=$INSTALLPATH/install-files" > $LOGFILE
