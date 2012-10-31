@@ -69,7 +69,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 		/sbin/bbx umount /data
 	fi
 
-	if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $(strace $RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /ss/ss.log 2>&1;echo $?) -eq 0 ]; then
+	if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
 		# filesystem cleanup
 		/sbin/bbx rm /etc
 		/sbin/bbx mkdir /etc
