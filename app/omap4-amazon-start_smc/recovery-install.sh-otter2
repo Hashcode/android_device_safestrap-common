@@ -5,7 +5,7 @@ PATH=/system/bin:/system/xbin
 BLOCKNAME_DIR=/dev/block/platform/omap/omap_hsmmc.1/by-name
 SYS_BLOCK=$BLOCKNAME_DIR/systemorig
 SYS_BLOCK_FSTYPE=ext4
-HIJACK_BIN=setup_fs
+HIJACK_BIN=start_smc.sh
 
 INSTALLPATH=$1
 RECOVERY_DIR=/etc/safestrap
@@ -51,25 +51,18 @@ else
 fi
 
 # check for a $HIJACK_BIN.bin file and its not there, make a copy
-if [ ! -f "$DESTMOUNT/bin/$HIJACK_BIN.bin" ]; then
-	$INSTALLPATH/busybox cp $DESTMOUNT/bin/$HIJACK_BIN $DESTMOUNT/bin/$HIJACK_BIN.bin >> $LOGFILE
-	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN.bin >> $LOGFILE
-	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN.bin >> $LOGFILE
+if [ ! -f "$DESTMOUNT/vendor/bin/$HIJACK_BIN.bin" ]; then
+	$INSTALLPATH/busybox cp $DESTMOUNT/vendor/bin/$HIJACK_BIN $DESTMOUNT/vendor/bin/$HIJACK_BIN.bin >> $LOGFILE
+	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/vendor/bin/$HIJACK_BIN.bin >> $LOGFILE
+	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/vendor/bin/$HIJACK_BIN.bin >> $LOGFILE
 fi
 # remove any existing hijack files
-$INSTALLPATH/busybox rm $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
-$INSTALLPATH/busybox rm $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
+$INSTALLPATH/busybox rm $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
 
 #copy new hijack files
-$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN $DESTMOUNT/bin >> $LOGFILE
-$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
-$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN >> $LOGFILE
-$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN-hijack $DESTMOUNT/bin >> $LOGFILE
-$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
-$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
-
-# this sucks, but have to rename servicemanager
-$INSTALLPATH/busybox mv $DESTMOUNT/bin/servicemanager $DESTMOUNT/bin/servicemanager.bin >> $LOGFILE
+$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN $DESTMOUNT/vendor/bin >> $LOGFILE
+$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
+$INSTALLPATH/busybox chmod 755 $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
 
 # delete any existing /system/etc/safestrap dir
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then
@@ -82,9 +75,6 @@ $INSTALLPATH/busybox chmod 755 $DESTMOUNT$RECOVERY_DIR/* >> $LOGFILE
 
 # determine our active system, and umount/remount accordingly
 if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
-	# if we're in 2nd-system then re-enable safe boot
-	$INSTALLPATH/busybox touch $DESTMOUNT$RECOVERY_DIR/flags/alt_system_mode >> $LOGFILE
-
 	$INSTALLPATH/busybox umount $DESTMOUNT >> $LOGFILE
 	$INSTALLPATH/busybox rmdir $DESTMOUNT >> $LOGFILE
 else

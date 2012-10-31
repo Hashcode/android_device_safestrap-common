@@ -19,7 +19,7 @@ HIJACK_BIN=logwrapper
 
 if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 	# remount root as rw
-	mount -o remount,rw rootfs
+	/system/etc/safestrap/bbx mount -o remount,rw rootfs
 
 	# need busybox
 	cp $RECOVERY_DIR/bbx /sbin/bbx

@@ -11,8 +11,8 @@ INSTALLPATH=$1
 RECOVERY_DIR=/etc/safestrap
 LOGFILE=$INSTALLPATH/action-install.log
 
-BOARD_NAME=`getprop ro.product.board`
-if [ ! "$BOARD_NAME" = "bowser" ]; then
+BOARD_NAME=`getprop ro.product.model`
+if [ ! "$BOARD_NAME" = "KFTT" ]; then
 	exit 1
 fi
 
