@@ -12,7 +12,7 @@ RECOVERY_DIR=/etc/safestrap
 LOGFILE=$INSTALLPATH/action-install.log
 
 BOARD_NAME=`getprop ro.product.model`
-if [ ! "$BOARD_NAME" = "KFOT" ]; then
+if [ ! "$BOARD_NAME" = "KFTT" ]; then
 	exit 1
 fi
 
@@ -58,11 +58,15 @@ if [ ! -f "$DESTMOUNT/vendor/bin/$HIJACK_BIN.bin" ]; then
 fi
 # remove any existing hijack files
 $INSTALLPATH/busybox rm $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
+$INSTALLPATH/busybox rm $DESTMOUNT/vendor/bin/$HIJACK_BIN-hijack >> $LOGFILE
 
 #copy new hijack files
 $INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN $DESTMOUNT/vendor/bin >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
+$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN-hijack $DESTMOUNT/vendor/bin >> $LOGFILE
+$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/vendor/bin/$HIJACK_BIN-hijack >> $LOGFILE
+$INSTALLPATH/busybox chmod 755 $DESTMOUNT/vendor/bin/$HIJACK_BIN-hijack >> $LOGFILE
 
 # delete any existing /system/etc/safestrap dir
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then

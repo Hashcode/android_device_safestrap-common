@@ -63,9 +63,6 @@ $INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/$HIJACK_BIN-hijack $DE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/$HIJACK_BIN-hijack >> $LOGFILE
 
-# this sucks, but have to rename servicemanager
-$INSTALLPATH/busybox mv $DESTMOUNT/bin/servicemanager $DESTMOUNT/bin/servicemanager.bin >> $LOGFILE
-
 # delete any existing /system/etc/safestrap dir
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then
 	$INSTALLPATH/busybox rm -rf $DESTMOUNT$RECOVERY_DIR >> $LOGFILE
@@ -77,9 +74,6 @@ $INSTALLPATH/busybox chmod 755 $DESTMOUNT$RECOVERY_DIR/* >> $LOGFILE
 
 # determine our active system, and umount/remount accordingly
 if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
-	# if we're in 2nd-system then re-enable safe boot
-	$INSTALLPATH/busybox touch $DESTMOUNT$RECOVERY_DIR/flags/alt_system_mode >> $LOGFILE
-
 	$INSTALLPATH/busybox umount $DESTMOUNT >> $LOGFILE
 	$INSTALLPATH/busybox rmdir $DESTMOUNT >> $LOGFILE
 else

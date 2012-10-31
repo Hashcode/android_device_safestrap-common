@@ -14,7 +14,7 @@ SS_MNT=/ss
 RECOVERY_DIR=/system/etc/safestrap
 SS_DIR=$SS_MNT/safestrap
 ALT_SYSTEM_MODE="0"
-HIJACK_BIN=setup_fs
+HIJACK_BIN=start_smc.sh
 
 # create safestrap mount point
 /sbin/bbx mkdir $SS_MNT
@@ -30,12 +30,6 @@ HIJACK_BIN=setup_fs
 # stop the servicemanager service from starting
 /sbin/bbx mount -o remount,rw /system
 /sbin/bbx mv /system/bin/servicemanager /system/bin/servicemanager.bin
-setprop ctl.stop servicemanager
-#setprop ctl.disabled surfaceflinger
-#setprop ctl.disabled bootanim
-#setprop ctl.disabled media
-#setprop ctl.disabled zygote
-#setprop ctl.disabled drm
 
 # userdata is already mounted here
 # mount safestrap partition
@@ -119,7 +113,7 @@ if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_M
 	/sbin/bbx mv /system/bin/servicemanager.bin /system/bin/servicemanager
 	/sbin/bbx umount -l /system
 
-	/sbin/hijack.killall setup_fs
+	/sbin/hijack.killall start_smc
 
 	/sbin/taskset -p -c 0 1
 	/sbin/bbx sync
@@ -137,11 +131,11 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop7 $SYS_MNT
 
 	# check for hijacks, and remove
-	if [ -f "$SYS_MNT/bin/$HIJACK_BIN.bin" ]; then
-		/sbin/bbx rm $SYS_MNT/bin/$HIJACK_BIN
-		/sbin/bbx mv $SYS_MNT/bin/$HIJACK_BIN.bin $SYS_MNT/bin/$HIJACK_BIN
-		/sbin/bbx chmod 755 $SYS_MNT/bin/$HIJACK_BIN
-		/sbin/bbx chown 0.2000 $SYS_MNT/bin/$HIJACK_BIN
+	if [ -f "$SYS_MNT/vendor/bin/$HIJACK_BIN.bin" ]; then
+		/sbin/bbx rm $SYS_MNT/vendor/bin/$HIJACK_BIN
+		/sbin/bbx mv $SYS_MNT/vendor/bin/$HIJACK_BIN.bin $SYS_MNT/vendor/bin/$HIJACK_BIN
+		/sbin/bbx chmod 755 $SYS_MNT/vendor/bin/$HIJACK_BIN
+		/sbin/bbx chown 0.2000 $SYS_MNT/vendor/bin/$HIJACK_BIN
 	fi
 
 	# check for kexec files
@@ -153,7 +147,7 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 		/sbin/bbx losetup -d $BLOCK_DIR/loop7
 		/sbin/bbx umount $SS_MNT
 
-		/sbin/hijack.killall setup_fs
+		/sbin/hijack.killall start_smc
 
 		/sbin/bbx cd /
 		/sbin/bbx chmod 755 /kexec
@@ -197,7 +191,7 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	# unmount old /system
 	/sbin/bbx umount -l /system
 
-	/sbin/hijack.killall setup_fs
+	/sbin/hijack.killall start_smc
 
 	# mount point / symlink cleanup
 	/sbin/bbx rm /sdcard
@@ -219,15 +213,11 @@ setprop ctl.stop surfaceflinger
 setprop ctl.stop drm
 sleep 5
 setprop ctl.restart servicemanager
-setprop ctl.start surfaceflinger
-setprop ctl.start zygote
-setprop ctl.start media
-setprop ctl.start drm
 
 # unmount safestrap partition
 /sbin/bbx umount $SS_MNT
 
 /sbin/bbx mount -o remount,ro /system
 /sbin/bbx mount -o remount,ro rootfs
-/system/bin/$HIJACK_BIN.bin "$@"
+/system/vendor/bin/$HIJACK_BIN.bin "$@"
 

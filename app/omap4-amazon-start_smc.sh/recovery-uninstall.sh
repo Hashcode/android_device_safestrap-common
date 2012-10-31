@@ -42,6 +42,9 @@ if [ -f "$DESTMOUNT/vendor/bin/$HIJACK_BIN.bin" ]; then
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/vendor/bin/$HIJACK_BIN >> $LOGFILE
 fi
+if [ -f "$DESTMOUNT/vendor/bin/$HIJACK_BIN-hijack" ]; then
+	$INSTALLPATH/busybox rm $DESTMOUNT/vendor/bin/$HIJACK_BIN-hijack >> $LOGFILE
+fi
 
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then
 	$INSTALLPATH/busybox rm -r $DESTMOUNT$RECOVERY_DIR >> $LOGFILE

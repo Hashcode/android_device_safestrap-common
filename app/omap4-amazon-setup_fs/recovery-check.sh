@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Last Editted: 10/27/2012
+# Last Editted: 10/30/2012
 PATH=/system/bin:/system/xbin
 BLOCKNAME_DIR=/dev/block/platform/omap/omap_hsmmc.1/by-name
 SYS_BLOCK=$BLOCKNAME_DIR/systemorig
