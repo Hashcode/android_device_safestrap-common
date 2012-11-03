@@ -38,6 +38,11 @@ on boot
 service ueventd /sbin/ueventd
     critical
 
+service watchdog /sbin/watchdog -t 30
+    class core
+    oneshot
+    critical
+
 service recovery /sbin/recovery
 
 service adbd /sbin/adbd recovery
@@ -48,13 +53,12 @@ service adbd /sbin/adbd recovery
 on property:ro.debuggable=1
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 1949
-    write /sys/class/android_usb/android0/idProduct 0004
-    write /sys/class/android_usb/android0/functions "mass_storage,adb"
-    #write /sys/class/android_usb/android0/enable 1
-    write /sys/class/android_usb/android0/iManufacturer $ro.product.manufacturer
-    write /sys/class/android_usb/android0/iProduct $ro.product.model
-    write /sys/class/android_usb/android0/iSerial $ro.serialno
-    #start adbd
+    write /sys/class/android_usb/android0/idProduct 0007
+    write /sys/class/android_usb/android0/f_mass_storage/cdrom 0
+    write /sys/class/android_usb/android0/functions "adb,mass_storage"
+    write /sys/class/android_usb/android0/iManufacturer Amazon
+    write /sys/class/android_usb/android0/iProduct "Kindle"
+    write /sys/class/android_usb/android0/iSerial 000001
     setprop service.adb.root 1
 
 # Restart adbd so it can run as root

@@ -70,6 +70,9 @@ else
 	fi
 fi
 
+/sbin/bbx insmod /system/lib/modules/atmel_mxt_ts.ko
+/sbin/bbx sleep 2
+
 if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
 	/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
 	/sbin/bbx chmod 750 /sbin/*
@@ -120,6 +123,11 @@ if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_M
 	/sbin/bbx umount -l /system
 
 	/sbin/hijack.killall setup_fs
+
+	/sbin/bbx kill $(/sbin/bbx ps | /sbin/bbx grep tf_daemon)
+	/sbin/bbx kill $(/sbin/bbx ps | /sbin/bbx grep hdcp-test)
+
+	/sbin/bbs sleep 1
 
 	/sbin/taskset -p -c 0 1
 	/sbin/bbx sync
@@ -198,6 +206,9 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	/sbin/bbx umount -l /system
 
 	/sbin/hijack.killall setup_fs
+
+	/sbin/bbx kill $(/sbin/bbx ps | /sbin/bbx grep tf_daemon)
+	/sbin/bbx kill $(/sbin/bbx ps | /sbin/bbx grep hdcp-test)
 
 	# mount point / symlink cleanup
 	/sbin/bbx rm /sdcard
