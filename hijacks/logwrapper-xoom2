@@ -86,7 +86,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 			fi
 		fi
 
-		if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
+		if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > $SS_MNT/ss.log 2>&1;echo $?) -eq 0 ]; then
 			# filesystem cleanup
 			/sbin/bbx rm /etc
 			/sbin/bbx mkdir /etc
@@ -186,7 +186,18 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 				exit
 			fi
 
-			# if there's a ramdisk then extract it
+			# extract stock modified rootfs files
+			if [ -d "$RECOVERY_DIR/rootfs" ]; then
+				if [ -f "$RECOVERY_DIR/rootfs/sbin/adbd" ]; then
+					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+				fi
+				if [ -f "$RECOVERY_DIR/rootfs/init" ]; then
+					/sbin/bbx mv /init /init.old
+				fi
+				/sbin/bbx cp -R $RECOVERY_DIR/rootfs/* /
+			fi
+
+			# if there's a ramdisk in the new system then extract it
 			if [ -d "$SYS_MNT/etc/rootfs" ]; then
 				if [ -f "$SYS_MNT/etc/rootfs/sbin/adbd" ]; then
 					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
