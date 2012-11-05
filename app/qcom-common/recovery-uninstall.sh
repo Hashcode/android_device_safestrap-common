@@ -18,7 +18,7 @@ if [ -f $SYS_BLOCK ]; then
 else
 	PRIMARYSYS=`$INSTALLPATH/busybox ls -l $BLOCKNAME_DIR/ | $INSTALLPATH/busybox grep system | $INSTALLPATH/busybox tail -c 22`
 fi
-CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
+CURRENTSYS=`$INSTALLPATH/busybox ls -l $BLOCKNAME_DIR/system | $INSTALLPATH/busybox tail -c 22`
 
 echo '' > $LOGFILE
 

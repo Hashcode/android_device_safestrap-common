@@ -113,7 +113,7 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 			# extract recovery ramdisk
 			/sbin/bbx cd /
-			/sbin/bbx unzip -o $RECOVERY_DIR/recovery.zip -d /
+			/sbin/bbx unzip -o $RECOVERY_DIR/recovery.zip -d / > $SS_MNT/recovery.zip.log
 			/sbin/bbx cd /sbin
 			/sbin/bbx ln -s /sbin/busybox /sbin/sh
 			/sbin/bbx chmod -R 755 /res/*
