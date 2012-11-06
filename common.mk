@@ -28,10 +28,6 @@ PRODUCT_COPY_FILES += \
     $(COMMON_FOLDER)/recovery_mode:$(TARGET_RECOVERY_OUT)/root/../install-files/etc/safestrap/flags/recovery_mode \
     $(COMMON_FOLDER)/sbin/bbx:$(TARGET_RECOVERY_OUT)/root/../install-files/etc/safestrap/bbx \
 
-# Recovery files
-PRODUCT_COPY_FILES += \
-    $(COMMON_FOLDER)/sbin/update-binary:$(TARGET_RECOVERY_OUT)/root/sbin/update-binary \
-
 # Add battd
 ifdef BOARD_IS_MOTOROLA_DEVICE
 PRODUCT_COPY_FILES += \

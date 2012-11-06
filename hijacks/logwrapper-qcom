@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By: Hashcode
-# Last Editted: 10/29/2012
+# Last Editted: 11/06/2012
 PATH=/system/xbin:/system/bin:/sbin
 BLOCK_DIR=/dev/block
 BLOCKNAME_DIR=$BLOCK_DIR/platform/msm_sdcc.1/by-name
@@ -33,6 +33,8 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 	POWERUP_REASON=$(/sbin/bbx cat /proc/bootinfo | /sbin/bbx grep POWERUPREASON | /sbin/bbx cut -c 19-)
 
 	if [ "$CHARGER_MODE" != "1" ] || [ "$POWERUP_REASON" != "00000100" ]; then
+		/sbin/bbx echo 200 > /sys/class/backlight/lcd-backlight/brightness
+
 		# create safestrap mount point
 		/sbin/bbx mkdir $SS_MNT
 		/sbin/bbx chown 0.2000 $SS_MNT
@@ -184,6 +186,17 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 				/sbin/bbx sleep 1
 				/kexec -e
 				exit
+			fi
+
+			# if there are stock files in safestrap extract them
+			if [ -d "$RECOVERYDIR/rootfs" ]; then
+				if [ -f "$RECOVERYDIR/rootfs/sbin/adbd" ]; then
+					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+				fi
+				if [ -f "$RECOVERYDIR/rootfs/init" ]; then
+					/sbin/bbx mv /init /init.old
+				fi
+				/sbin/bbx cp -R $RECOVERYDIR/rootfs/* /
 			fi
 
 			# if there's a ramdisk then extract it

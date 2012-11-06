@@ -7,24 +7,23 @@ on init
     export LD_LIBRARY_PATH .:/sbin
     export ANDROID_ROOT /system
     export ANDROID_DATA /data
-    export EXTERNAL_STORAGE /sdcard
+    export EXTERNAL_STORAGE /external_sd
 
     symlink /system/etc /etc
 
     mkdir /boot
-    mkdir /sdcard1
     mkdir /sdcard
     mkdir /sd-ext
-    mkdir /datadata
-    mkdir /systemorig
-    mkdir /userdataorig
+    mkdir /external_sd
     mkdir /system
     mkdir /data
     mkdir /cache
+    mkdir /systemorig
+    mkdir /userdataorig
+    mkdir /cacheorig
     mount /tmp /tmp tmpfs
     chmod /tmp 0777
 
-on fs
     exec /sbin/fixboot.sh
     export SAFESTRAP_BOOT true
 
