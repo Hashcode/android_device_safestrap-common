@@ -38,6 +38,7 @@ on boot
 service ueventd /sbin/ueventd
     critical
 
+# service watchdog /sbin/strace -ff -F -tt -s 200 -o /ss/safestrap/watchdog.pid /sbin/watchdog -t 30
 service watchdog /sbin/watchdog -t 30
     class core
     oneshot

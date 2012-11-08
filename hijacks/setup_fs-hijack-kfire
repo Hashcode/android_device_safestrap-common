@@ -1,6 +1,6 @@
 #!/sbin/bbx sh
 # By: Hashcode
-# Last Edit: 10/30/2012
+# Last Editted: 11/07/2012
 PATH=/system/xbin:/system/bin:/sbin
 BLOCK_DIR=/dev/block
 BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
@@ -15,6 +15,11 @@ RECOVERY_DIR=/system/etc/safestrap
 SS_DIR=$SS_MNT/safestrap
 ALT_SYSTEM_MODE="0"
 HIJACK_BIN=setup_fs
+
+# create SS loopdevs
+/sbin/bbx mknod -m600 /dev/block/loop-system b 7 99
+/sbin/bbx mknod -m600 /dev/block/loop-userdata b 7 98
+/sbin/bbx mknod -m600 /dev/block/loop-cache b 7 97
 
 # create safestrap mount point
 /sbin/bbx mkdir $SS_MNT
@@ -55,14 +60,14 @@ fi
 # check for .recovery_mode on current /data mount
 if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	# setup loopback
-	/sbin/bbx losetup $BLOCK_DIR/loop6 $SS_DIR/$SLOT_LOC/userdata.img
-	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop6 $USER_MNT
+	/sbin/bbx losetup $BLOCK_DIR/loop-userdata $SS_DIR/$SLOT_LOC/userdata.img
+	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop-userdata $USER_MNT
 	if [ -f $USER_MNT/.recovery_mode ]; then
 		/sbin/bbx rm $USER_MNT/.recovery_mode
 		ALT_SYSTEM_MODE="2"
 	fi
 	/sbin/bbx umount $USER_MNT
-	/sbin/bbx losetup -d $BLOCK_DIR/loop6
+	/sbin/bbx losetup -d $BLOCK_DIR/loop-userdata
 else
 	if [ -f /data/.recovery_mode ]; then
 		/sbin/bbx rm /data/.recovery_mode
@@ -141,8 +146,8 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	/sbin/bbx chmod 750 /sbin/*
 
 	# setup loopback
-	/sbin/bbx losetup $BLOCK_DIR/loop7 $SS_DIR/$SLOT_LOC/system.img
-	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop7 $SYS_MNT
+	/sbin/bbx losetup $BLOCK_DIR/loop-system $SS_DIR/$SLOT_LOC/system.img
+	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop-system $SYS_MNT
 
 	# check for hijacks, and remove
 	if [ -f "$SYS_MNT/bin/$HIJACK_BIN.bin" ]; then
@@ -158,7 +163,7 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 
 		# unmount new /system
 		/sbin/bbx umount $SYS_MNT
-		/sbin/bbx losetup -d $BLOCK_DIR/loop7
+		/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 		/sbin/bbx umount $SS_MNT
 
 		/sbin/hijack.killall setup_fs
@@ -196,7 +201,7 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 
 	# unmount new /system
 	/sbin/bbx umount $SYS_MNT
-	/sbin/bbx losetup -d $BLOCK_DIR/loop7
+	/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 	/sbin/bbx umount $SS_MNT
 
 	# fix the servicemanager service

@@ -1,8 +1,9 @@
 #!/system/bin/sh
 # By Hashcode
-# Last Editted: 10/27/2012
+# Last Editted: 11/07/2012
 PATH=/system/bin:/system/xbin
-BLOCKNAME_DIR=/dev/block/platform/omap/omap_hsmmc.1/by-name
+BLOCK_DIR=/dev/block
+BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
 SYS_BLOCK=$BLOCKNAME_DIR/systemorig
 SYS_BLOCK_FSTYPE=ext4
 HIJACK_BIN=logwrapper
@@ -18,7 +19,7 @@ if [ -f $SYS_BLOCK ]; then
 else
 	PRIMARYSYS=`$INSTALLPATH/busybox ls -l $BLOCKNAME_DIR/ | $INSTALLPATH/busybox grep system | $INSTALLPATH/busybox tail -c 22`
 fi
-CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
+CURRENTSYS=`$INSTALLPATH/busybox ls -l $BLOCKNAME_DIR/system | $INSTALLPATH/busybox tail -c 22`
 
 echo '' > $LOGFILE
 
