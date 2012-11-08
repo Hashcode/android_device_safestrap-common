@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By: Hashcode
-# Last Editted: 11/06/2012
+# Last Editted: 11/07/2012
 PATH=/system/xbin:/system/bin:/sbin
 BLOCK_DIR=/dev/block
 BLOCKNAME_DIR=$BLOCK_DIR/platform/msm_sdcc.1/by-name
@@ -37,10 +37,9 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 		/sbin/bbx echo 200 > /sys/class/backlight/lcd-backlight/brightness
 
 		# create SS loopdevs
-		# system
-		mknod -m600 /dev/block/loop-system b 7 25
-		mknod -m600 /dev/block/loop-userdata b 7 26
-		mknod -m600 /dev/block/loop-cache b 7 27
+		/sbin/bbx mknod -m600 /dev/block/loop-system b 7 99
+		/sbin/bbx mknod -m600 /dev/block/loop-userdata b 7 98
+		/sbin/bbx mknod -m600 /dev/block/loop-cache b 7 97
 
 		# create safestrap mount point
 		/sbin/bbx mkdir $SS_MNT
@@ -195,16 +194,10 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 				exit
 			fi
 
-			# if there are stock files in safestrap extract them
-			if [ -d "$RECOVERYDIR/rootfs" ]; then
-				if [ -f "$RECOVERYDIR/rootfs/sbin/adbd" ]; then
-					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
-				fi
-				if [ -f "$RECOVERYDIR/rootfs/init" ]; then
-					/sbin/bbx mv /init /init.old
-				fi
-				/sbin/bbx cp -R $RECOVERYDIR/rootfs/* /
-			fi
+			# adjust stock init.rc file to include /sbin/fixboot.sh
+			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new
+			/sbin/bbx mv /init.rc /init.rc.old
+			/sbin/bbx mv /init.rc.new /init.rc
 
 			# if there's a ramdisk then extract it
 			if [ -d "$SYS2_MNT/etc/rootfs" ]; then
