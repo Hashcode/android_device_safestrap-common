@@ -1,12 +1,16 @@
 #!/system/bin/sh
 # By: Hashcode
-# Version: 3.02
+# Last Editted: 11/07/2012
 PATH=/system/xbin:/system/bin:/sbin
+BLOCK_DIR=/dev/block
+BLOCKNAME_DIR=$BLOCK_DIR
 
 # SS3 Setup
 SYS2_MNT=/s2
+IMG_TYPE=ext3
 SS_MNT=/ss
 SS_PART=emstorage
+SS_TYPE=vfat
 
 RECOVERY_DIR=/system/etc/safestrap
 SS_DIR=$SS_MNT/safestrap
@@ -14,6 +18,7 @@ ALT_SYSTEM_MODE="0"
 BOOTMODE=$(getprop ro.bootmode)
 CHARGER_MODE=$(cat /sys/class/power_supply/ac/online)
 CHECK_BOOTMODE="bp-tools"
+HIJACK_BIN=logwrapper
 
 # Function for search/replace partition names with symlink generics
 fixReference()
@@ -45,6 +50,11 @@ if [ "$2" = "userdata" ]; then
 	POWERUP_REASON=$(/sbin/bbx cat /proc/bootinfo | /sbin/bbx grep POWERUPREASON | /sbin/bbx cut -c 19-)
 
 	if [ "$CHARGER_MODE" != "1" ] || [ "$POWERUP_REASON" != "00000100" ]; then
+		# create SS loopdevs
+		/sbin/bbx mknod -m600 /dev/block/loop-system b 7 99
+		/sbin/bbx mknod -m600 /dev/block/loop-userdata b 7 98
+		/sbin/bbx mknod -m600 /dev/block/loop-cache b 7 97
+
 		# create safestrap mount point
 		/sbin/bbx mkdir $SS_MNT
 		/sbin/bbx chown 0.2000 $SS_MNT
@@ -54,7 +64,7 @@ if [ "$2" = "userdata" ]; then
 		/sbin/bbx chmod 777 $SYS2_MNT
 
 		# mount safestrap partition
-		/sbin/bbx mount -t vfat /dev/block/$SS_PART $SS_MNT
+		/sbin/bbx mount -t $SS_TYPE $BLOCKNAME_DIR/$SS_PART $SS_MNT
 
 		if [ ! -d "$SS_DIR" ]; then
 			/sbin/bbx mkdir -p $SS_DIR
@@ -80,16 +90,16 @@ if [ "$2" = "userdata" ]; then
 		# check for .recovery_mode on current /data mount
 		if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 			# setup loopback
-			/sbin/bbx losetup /dev/block/loop6 $SS_DIR/$SLOT_LOC/userdata.img
-			/sbin/bbx mount -t ext3 /dev/block/loop6 /data
+			/sbin/bbx losetup $BLOCK_DIR/loop-userdata $SS_DIR/$SLOT_LOC/userdata.img
+			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-userdata /data
 			if [ -f /data/.recovery_mode ]; then
 				/sbin/bbx rm /data/.recovery_mode
 				ALT_SYSTEM_MODE="2"
 			fi
 			/sbin/bbx umount /data
-			/sbin/bbx losetup -d /dev/block/loop6
+			/sbin/bbx losetup -d $BLOCK_DIR/loop-userdata
 		else
-			/sbin/bbx mount -t ext3 /dev/block/userdata /data
+			/sbin/bbx mount -t $IMG_TYPE $BLOCKNAME_DIR/userdata /data
 			if [ -f /data/.recovery_mode ]; then
 				/sbin/bbx rm /data/.recovery_mode
 				ALT_SYSTEM_MODE="2"
@@ -133,12 +143,16 @@ if [ "$2" = "userdata" ]; then
 			/sbin/bbx chmod -R 755 /sbin/*
 
 			# setup translate table
-			/sbin/bbx cat /proc/partitions | /sbin/bbx grep system | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' > $SS_DIR/translate
-			/sbin/bbx cat /proc/partitions | /sbin/bbx grep userdata | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' >> $SS_DIR/translate
-			/sbin/bbx cat /proc/partitions | /sbin/bbx grep cache | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' >> $SS_DIR/translate
-			/sbin/bbx cat /proc/partitions | /sbin/bbx grep pds | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' >> $SS_DIR/translate
-			/sbin/bbx cat /proc/partitions | /sbin/bbx grep preinstall | /sbin/bbx cut -c26-36 | /sbin/bbx sed 's/\t/=system/g' >> $SS_DIR/translate
-			/sbin/bbx cat /proc/partitions | /sbin/bbx grep webtop | /sbin/bbx cut -c26-36 | /sbin/bbx sed 's/\t/=system/g' >> $SS_DIR/translate
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep "system ->" | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/system > $SS_DIR/translate
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep "userdata ->" | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/userdata >> $SS_DIR/translate
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep "cache ->" | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/cache >> $SS_DIR/translate
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep pds | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/pds >> $SS_DIR/translate
+			# fix SS2 hard references
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep preinstall | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/system >> $SS_DIR/translate
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep webtop | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/system >> $SS_DIR/translate
+			# meager attempt at stopping writes to the boot device
+			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep "boot ->" | /sbin/bbx tail -c 22`=/dev/null >> $SS_DIR/translate
+			/sbin/bbx echo $BLOCKNAME_DIR/boot=/dev/null >> $SS_DIR/translate
 
 			# unmount partitions
 			/sbin/bbx umount /system
@@ -158,21 +172,22 @@ if [ "$2" = "userdata" ]; then
 			/sbin/bbx chmod 750 /sbin/*
 
 			# setup loopback
-			/sbin/bbx losetup /dev/block/loop7 $SS_DIR/$SLOT_LOC/system.img
-			/sbin/bbx mount -t ext3 /dev/block/loop7 $SYS2_MNT
+			/sbin/bbx losetup $BLOCK_DIR/loop-system $SS_DIR/$SLOT_LOC/system.img
+			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-system $SYS2_MNT
 
-			# check for hijacks, and remove
-			if [ -f "$SYS2_MNT/bin/logwrapper.orig" ]; then
-				/sbin/bbx rm $SYS2_MNT/bin/logwrapper
-				/sbin/bbx mv $SYS2_MNT/bin/logwrapper.orig $SYS2_MNT/bin/logwrapper
-				/sbin/bbx chmod 755 $SYS2_MNT/bin/logwrapper
-				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/logwrapper
+			# check for old-school original hijacks, and remove
+			if [ -f "$SYS2_MNT/bin/$HIJACK_BIN.orig" ]; then
+				/sbin/bbx rm $SYS2_MNT/bin/$HIJACK_BIN
+				/sbin/bbx mv $SYS2_MNT/bin/$HIJACK_BIN.orig $SYS2_MNT/bin/$HIJACK_BIN
+				/sbin/bbx chmod 755 $SYS2_MNT/bin/$HIJACK_BIN
+				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/$HIJACK_BIN
 			fi
-			if [ -f "$SYS2_MNT/bin/logwrapper.bin" ]; then
-				/sbin/bbx rm $SYS2_MNT/bin/logwrapper
-				/sbin/bbx mv $SYS2_MNT/bin/logwrapper.bin $SYS2_MNT/bin/logwrapper
-				/sbin/bbx chmod 755 $SYS2_MNT/bin/logwrapper
-				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/logwrapper
+			# check for hijacks, and remove
+			if [ -f "$SYS2_MNT/bin/$HIJACK_BIN.bin" ]; then
+				/sbin/bbx rm $SYS2_MNT/bin/$HIJACK_BIN
+				/sbin/bbx mv $SYS2_MNT/bin/$HIJACK_BIN.bin $SYS2_MNT/bin/$HIJACK_BIN
+				/sbin/bbx chmod 755 $SYS2_MNT/bin/$HIJACK_BIN
+				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/$HIJACK_BIN
 			fi
 
 			# check for kexec files
@@ -181,7 +196,7 @@ if [ "$2" = "userdata" ]; then
 
 				# unmount new /system
 				/sbin/bbx umount $SYS2_MNT
-				/sbin/bbx losetup -d /dev/block/loop7
+				/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 				/sbin/bbx umount $SS_MNT
 
 				/sbin/hijack.killall
@@ -197,6 +212,11 @@ if [ "$2" = "userdata" ]; then
 				/kexec -e
 				exit
 			fi
+
+			# adjust stock init.rc file to include /sbin/fixboot.sh
+			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new
+			/sbin/bbx mv /init.rc /init.rc.old
+			/sbin/bbx mv /init.rc.new /init.rc
 
 			# if there's a ramdisk then extract it
 			if [ -d "$SYS2_MNT/etc/rootfs" ]; then
@@ -231,7 +251,7 @@ if [ "$2" = "userdata" ]; then
 
 			# unmount new /system
 			/sbin/bbx umount $SYS2_MNT
-			/sbin/bbx losetup -d /dev/block/loop7
+			/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 			/sbin/bbx umount $SS_MNT
 
 			# unmount old /system
@@ -254,6 +274,5 @@ if [ "$2" = "userdata" ]; then
 	fi
 fi
 
-/system/bin/logwrapper.bin "$@"
-
+/system/bin/$HIJACK_BIN.bin "$@"
 
