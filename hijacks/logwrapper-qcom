@@ -195,9 +195,12 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			fi
 
 			# adjust stock init.rc file to include /sbin/fixboot.sh
-			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new
+			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
+			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
+			/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
 			/sbin/bbx mv /init.rc /init.rc.old
-			/sbin/bbx mv /init.rc.new /init.rc
+			/sbin/bbx mv /init.rc.new2 /init.rc
+			/sbin/bbx rm /init.rc.new*
 
 			# if there's a ramdisk then extract it
 			if [ -d "$SYS2_MNT/etc/rootfs" ]; then
@@ -231,7 +234,8 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 			# mount point / symlink cleanup
 			/sbin/bbx rm /sdcard
-			/sbin/bbx rm /sdcard-ext
+			/sbin/bbx rmdir /mnt/sdcard
+			/sbin/bbx rmdir /mnt/external1
 
 			/sbin/taskset -p -c 0 1
 			/sbin/bbx sync
