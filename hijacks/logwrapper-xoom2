@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By: Hashcode
-# Last Edit: 10/30/2012
+# Last Editted: 11/07/2012
 PATH=/system/xbin:/system/bin:/sbin
 BLOCK_DIR=/dev/block
 BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
@@ -8,8 +8,9 @@ BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
 # SS3 Setup
 SYS_MNT=/s2
 USER_MNT=/u2
-IMG_FSTYPE=ext4
+IMG_TYPE=ext4
 SS_MNT=/ss
+SS_PART=userdata
 
 RECOVERY_DIR=/system/etc/safestrap
 SS_DIR=$SS_MNT/safestrap
@@ -20,7 +21,7 @@ CHECK_BOOTMODE="bp-tools"
 HIJACK_BIN=logwrapper
 
 
-if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
+if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 	# remount root as rw
 	/system/etc/safestrap/bbx mount -o remount,rw rootfs
 
@@ -32,6 +33,11 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 	POWERUP_REASON=$(/sbin/bbx cat /proc/bootinfo | /sbin/bbx grep POWERUPREASON | /sbin/bbx cut -c 19-)
 
 	if [ "$CHARGER_MODE" != "1" ] || [ "$POWERUP_REASON" != "00000100" ]; then
+		# create SS loopdevs
+		/sbin/bbx mknod -m600 /dev/block/loop-system b 7 99
+		/sbin/bbx mknod -m600 /dev/block/loop-userdata b 7 98
+		/sbin/bbx mknod -m600 /dev/block/loop-cache b 7 97
+
 		# create safestrap mount point
 		/sbin/bbx mkdir $SS_MNT
 		/sbin/bbx chown 0.2000 $SS_MNT
@@ -44,7 +50,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 		/sbin/bbx chmod 777 $USER_MNT
 
 		# mount safestrap partition
-		/sbin/bbx mount -t $IMG_TYPE -o noatime,nosuid,nodev $BLOCKNAME_DIR/userdata $USER_MNT
+		/sbin/bbx mount -t $IMG_TYPE $BLOCKNAME_DIR/$SS_PART $USER_MNT
 		/sbin/bbx mount $USER_MNT/media $SS_MNT
 
 		if [ ! -d "$SS_DIR" ]; then
@@ -71,14 +77,14 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 		# check for .recovery_mode on current /data mount
 		if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 			# setup loopback
-			/sbin/bbx losetup $BLOCK_DIR/loop6 $SS_DIR/$SLOT_LOC/userdata.img
-			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop6 /data
+			/sbin/bbx losetup $BLOCK_DIR/loop-userdata $SS_DIR/$SLOT_LOC/userdata.img
+			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-userdata /data
 			if [ -f /data/.recovery_mode ]; then
 				/sbin/bbx rm /data/.recovery_mode
 				ALT_SYSTEM_MODE="2"
 			fi
 			/sbin/bbx umount /data
-			/sbin/bbx losetup -d $BLOCK_DIR/loop6
+			/sbin/bbx losetup -d $BLOCK_DIR/loop-userdata
 		else
 			if [ -f $USER_MNT/.recovery_mode ]; then
 				/sbin/bbx rm $USER_MNT/.recovery_mode
@@ -86,7 +92,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 			fi
 		fi
 
-		if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > $SS_MNT/ss.log 2>&1;echo $?) -eq 0 ]; then
+		if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
 			# filesystem cleanup
 			/sbin/bbx rm /etc
 			/sbin/bbx mkdir /etc
@@ -121,18 +127,17 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 			/sbin/bbx chmod -R 755 /sbin/*
 
 			# setup translate table
-			# echo `busybox ls -l $BLOCKNAME_DIR/ | busybox grep system | busybox tail -c 21`=system
 			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep system | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/system > $SS_DIR/translate
 			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep userdata | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/userdata >> $SS_DIR/translate
 			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep cache | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/cache >> $SS_DIR/translate
 			# meager attempt at stopping writes to the boot device
 			/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep boot | /sbin/bbx tail -c 22`=/dev/null >> $SS_DIR/translate
-			/sbin/bbx echo $BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name/boot=/dev/null >> $SS_DIR/translate
+			/sbin/bbx echo $BLOCKNAME_DIR/boot=/dev/null >> $SS_DIR/translate
 
 			# unmount partitions
+			/sbin/bbx umount -l /system
 			/sbin/bbx umount $SS_MNT
 			/sbin/bbx umount $USER_MNT
-			/sbin/bbx umount -l /system
 
 			/sbin/hijack.killall
 
@@ -148,8 +153,8 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 			/sbin/bbx chmod 750 /sbin/*
 
 			# setup loopback
-			/sbin/bbx losetup $BLOCK_DIR/loop7 $SS_DIR/$SLOT_LOC/system.img
-			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop7 $SYS_MNT
+			/sbin/bbx losetup $BLOCK_DIR/loop-system $SS_DIR/$SLOT_LOC/system.img
+			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-system $SYS_MNT
 
 			# check for hijacks, and remove
 			if [ -f "$SYS_MNT/bin/$HIJACK_BIN.bin" ]; then
@@ -165,11 +170,9 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 
 				# unmount new /system
 				/sbin/bbx umount $SYS_MNT
-				/sbin/bbx losetup -d $BLOCK_DIR/loop7
-				# unmount safestrap
+				/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 				/sbin/bbx umount $SS_MNT
 				/sbin/bbx umount $USER_MNT
-				# unmount old /system
 				/sbin/bbx umount -l /system
 
 				/sbin/hijack.killall
@@ -186,6 +189,14 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 				exit
 			fi
 
+			# adjust stock init.rc file to include /sbin/fixboot.sh
+			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
+			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
+			/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
+			/sbin/bbx mv /init.rc /init.rc.old
+			/sbin/bbx mv /init.rc.new2 /init.rc
+			/sbin/bbx rm /init.rc.new*
+
 			# extract stock modified rootfs files
 			if [ -d "$RECOVERY_DIR/rootfs" ]; then
 				if [ -f "$RECOVERY_DIR/rootfs/sbin/adbd" ]; then
@@ -197,7 +208,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 				/sbin/bbx cp -R $RECOVERY_DIR/rootfs/* /
 			fi
 
-			# if there's a ramdisk in the new system then extract it
+			# if there's a ramdisk then extract it
 			if [ -d "$SYS_MNT/etc/rootfs" ]; then
 				if [ -f "$SYS_MNT/etc/rootfs/sbin/adbd" ]; then
 					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
@@ -218,9 +229,7 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 
 			# unmount new /system
 			/sbin/bbx umount $SYS_MNT
-			/sbin/bbx losetup -d $BLOCK_DIR/loop7
-
-			# unmount safestrap
+			/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 			/sbin/bbx umount $SS_MNT
 			/sbin/bbx umount $USER_MNT
 
@@ -231,7 +240,8 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 
 			# mount point / symlink cleanup
 			/sbin/bbx rm /sdcard
-			/sbin/bbx rm /sdcard-ext
+			/sbin/bbx rmdir /mnt/sdcard
+			/sbin/bbx rmdir /mnt/external1
 
 			/sbin/taskset -p -c 0 1
 			/sbin/bbx sync
@@ -240,7 +250,6 @@ if [ "$3" = "/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata" ]; then
 		fi
 
 		# unmount safestrap partition
-		# unmount safestrap
 		/sbin/bbx umount $SS_MNT
 		/sbin/bbx umount $USER_MNT
 	fi

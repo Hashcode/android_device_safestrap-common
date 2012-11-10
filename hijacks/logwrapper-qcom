@@ -6,8 +6,8 @@ BLOCK_DIR=/dev/block
 BLOCKNAME_DIR=$BLOCK_DIR/platform/msm_sdcc.1/by-name
 
 # SS3 Setup
-SYS2_MNT=/s2
-USER2_MNT=/u2
+SYS_MNT=/s2
+USER_MNT=/u2
 IMG_TYPE=ext4
 SS_MNT=/ss
 SS_PART=userdata
@@ -23,7 +23,7 @@ HIJACK_BIN=logwrapper
 
 if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 	# remount root as rw
-	mount -o remount,rw rootfs
+	/system/etc/safestrap/bbx mount -o remount,rw rootfs
 
 	# need busybox
 	cp $RECOVERY_DIR/bbx /sbin/bbx
@@ -45,16 +45,16 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 		/sbin/bbx mkdir $SS_MNT
 		/sbin/bbx chown 0.2000 $SS_MNT
 		/sbin/bbx chmod 777 $SS_MNT
-		/sbin/bbx mkdir $SYS2_MNT
-		/sbin/bbx chown 0.2000 $SYS2_MNT
-		/sbin/bbx chmod 777 $SYS2_MNT
-		/sbin/bbx mkdir $USER2_MNT
-		/sbin/bbx chown 0.2000 $USER2_MNT
-		/sbin/bbx chmod 777 $USER2_MNT
+		/sbin/bbx mkdir $SYS_MNT
+		/sbin/bbx chown 0.2000 $SYS_MNT
+		/sbin/bbx chmod 777 $SYS_MNT
+		/sbin/bbx mkdir $USER_MNT
+		/sbin/bbx chown 0.2000 $USER_MNT
+		/sbin/bbx chmod 777 $USER_MNT
 
 		# mount safestrap partition
-		/sbin/bbx mount -t $IMG_TYPE $BLOCKNAME_DIR/$SS_PART $USER2_MNT
-		/sbin/bbx mount $USER2_MNT/media $SS_MNT
+		/sbin/bbx mount -t $IMG_TYPE $BLOCKNAME_DIR/$SS_PART $USER_MNT
+		/sbin/bbx mount $USER_MNT/media $SS_MNT
 
 		if [ ! -d "$SS_DIR" ]; then
 			/sbin/bbx mkdir -p $SS_DIR
@@ -89,13 +89,10 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			/sbin/bbx umount /data
 			/sbin/bbx losetup -d $BLOCK_DIR/loop-userdata
 		else
-			# /u2 is already mounted
-			# /sbin/bbx mount -t $IMG_TYPE $BLOCKNAME_DIR/userdata /data
-			if [ -f $USER2_MNT/.recovery_mode ]; then
-				/sbin/bbx rm $USER2_MNT/.recovery_mode
+			if [ -f $USER_MNT/.recovery_mode ]; then
+				/sbin/bbx rm $USER_MNT/.recovery_mode
 				ALT_SYSTEM_MODE="2"
 			fi
-			#/sbin/bbx umount /data
 		fi
 
 		if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
@@ -144,7 +141,7 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			# unmount partitions
 			/sbin/bbx umount /system
 			/sbin/bbx umount $SS_MNT
-			/sbin/bbx umount $USER2_MNT
+			/sbin/bbx umount $USER_MNT
 
 			/sbin/hijack.killall
 
@@ -161,24 +158,26 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 			# setup loopback
 			/sbin/bbx losetup $BLOCK_DIR/loop-system $SS_DIR/$SLOT_LOC/system.img
-			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-system $SYS2_MNT
+			/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-system $SYS_MNT
 
 			# check for hijacks, and remove
-			if [ -f "$SYS2_MNT/bin/$HIJACK_BIN.bin" ]; then
-				/sbin/bbx rm $SYS2_MNT/bin/$HIJACK_BIN
-				/sbin/bbx mv $SYS2_MNT/bin/$HIJACK_BIN.bin $SYS2_MNT/bin/$HIJACK_BIN
-				/sbin/bbx chmod 755 $SYS2_MNT/bin/$HIJACK_BIN
-				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/$HIJACK_BIN
+			if [ -f "$SYS_MNT/bin/$HIJACK_BIN.bin" ]; then
+				/sbin/bbx rm $SYS_MNT/bin/$HIJACK_BIN
+				/sbin/bbx mv $SYS_MNT/bin/$HIJACK_BIN.bin $SYS_MNT/bin/$HIJACK_BIN
+				/sbin/bbx chmod 755 $SYS_MNT/bin/$HIJACK_BIN
+				/sbin/bbx chown 0.2000 $SYS_MNT/bin/$HIJACK_BIN
 			fi
 
 			# check for kexec files
-			if [ -d "$SYS2_MNT/etc/kexec" ]; then
-				/sbin/bbx cp $SYS2_MNT/etc/kexec/* /
+			if [ -d "$SYS_MNT/etc/kexec" ]; then
+				/sbin/bbx cp $SYS_MNT/etc/kexec/* /
 
 				# unmount new /system
-				/sbin/bbx umount $SYS2_MNT
+				/sbin/bbx umount $SYS_MNT
 				/sbin/bbx losetup -d $BLOCK_DIR/loop-system
 				/sbin/bbx umount $SS_MNT
+				/sbin/bbx umount $USER_MNT
+				/sbin/bbx umount -l /system
 
 				/sbin/hijack.killall
 
@@ -202,15 +201,26 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			/sbin/bbx mv /init.rc.new2 /init.rc
 			/sbin/bbx rm /init.rc.new*
 
-			# if there's a ramdisk then extract it
-			if [ -d "$SYS2_MNT/etc/rootfs" ]; then
-				if [ -f "$SYS2_MNT/etc/rootfs/sbin/adbd" ]; then
+			# extract stock modified rootfs files
+			if [ -d "$RECOVERY_DIR/rootfs" ]; then
+				if [ -f "$RECOVERY_DIR/rootfs/sbin/adbd" ]; then
 					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
 				fi
-				if [ -f "$SYS2_MNT/etc/rootfs/init" ]; then
+				if [ -f "$RECOVERY_DIR/rootfs/init" ]; then
 					/sbin/bbx mv /init /init.old
 				fi
-				/sbin/bbx cp -R $SYS2_MNT/etc/rootfs/* /
+				/sbin/bbx cp -R $RECOVERY_DIR/rootfs/* /
+			fi
+
+			# if there's a ramdisk then extract it
+			if [ -d "$SYS_MNT/etc/rootfs" ]; then
+				if [ -f "$SYS_MNT/etc/rootfs/sbin/adbd" ]; then
+					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+				fi
+				if [ -f "$SYS_MNT/etc/rootfs/init" ]; then
+					/sbin/bbx mv /init /init.old
+				fi
+				/sbin/bbx cp -R $SYS_MNT/etc/rootfs/* /
 			fi
 
 			# reset permissions
@@ -222,10 +232,10 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			/sbin/bbx chmod 755 /*.sh
 
 			# unmount new /system
-			/sbin/bbx umount $SYS2_MNT
+			/sbin/bbx umount $SYS_MNT
 			/sbin/bbx losetup -d $BLOCK_DIR/loop-system
-			/sbin/bbx umount $USER2_MNT
 			/sbin/bbx umount $SS_MNT
+			/sbin/bbx umount $USER_MNT
 
 			# unmount old /system
 			/sbin/bbx umount -l /system
@@ -245,6 +255,7 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 		# unmount safestrap partition
 		/sbin/bbx umount $SS_MNT
+		/sbin/bbx umount $USER_MNT
 	fi
 fi
 
