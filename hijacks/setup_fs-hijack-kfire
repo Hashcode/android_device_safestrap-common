@@ -7,7 +7,7 @@ BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
 
 # SS3 Setup
 SYS_MNT=/s2
-USER_MNT=/u2
+USER_MNT=/datamedia
 IMG_FSTYPE=ext4
 SS_MNT=/ss
 
@@ -179,6 +179,20 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 		/kexec -e
 		exit
 	fi
+
+	# adjust stock init.rc file to include /sbin/fixboot.sh
+	/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
+	/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
+	/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
+	/sbin/bbx mv /init.rc /init.rc.old
+	/sbin/bbx mv /init.rc.new2 /init.rc
+	/sbin/bbx rm /init.rc.new*
+
+	# adjust init.<hardware>.rc for where to mount /sdcard
+	/sbin/bbx cat /init.bowser.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.bowser.rc.new0
+	/sbin/bbx mv /init.bowser.rc.new0 /init.bowser.rc
+	/sbin/bbx cat /init.omap4blazeboard.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.omap4blazeboard.rc.new0
+	/sbin/bbx mv /init.omap4blazeboard.rc.new0 /init.omap4blazeboard.rc
 
 	# if there's a ramdisk then extract it
 	if [ -d "$SYS_MNT/etc/rootfs" ]; then

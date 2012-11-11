@@ -201,7 +201,10 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			/sbin/bbx mv /init.rc.new2 /init.rc
 			/sbin/bbx rm /init.rc.new*
 
-			# extract stock modified rootfs files
+			# adjust init.<hardware>.rc for where to mount /sdcard
+			/sbin/bbx cat /init.qcom.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.qcom.rc.new0
+			/sbin/bbx mv /init.qcom.rc.new0 /init.qcom.rc
+
 			if [ -d "$RECOVERY_DIR/rootfs" ]; then
 				if [ -f "$RECOVERY_DIR/rootfs/sbin/adbd" ]; then
 					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
