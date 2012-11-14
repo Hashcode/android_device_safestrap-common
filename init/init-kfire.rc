@@ -38,9 +38,6 @@ on boot
 service ueventd /sbin/ueventd
     critical
 
-service watchdog /sbin/do_watchdog.sh
-    oneshot
-
 service recovery /sbin/recovery
 
 service adbd /sbin/adbd recovery
