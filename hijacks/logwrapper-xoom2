@@ -7,7 +7,7 @@ BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
 
 # SS3 Setup
 SYS_MNT=/s2
-USER_MNT=/u2
+USER_MNT=/datamedia
 IMG_TYPE=ext4
 SS_MNT=/ss
 SS_PART=userdata
@@ -197,8 +197,10 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			/sbin/bbx mv /init.rc.new2 /init.rc
 			/sbin/bbx rm /init.rc.new*
 
-			/sbin/bbx cat /init.qcom.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.qcom.rc.new0
-			/sbin/bbx mv /init.qcom.rc.new0 /init.qcom.rc
+			/sbin/bbx cat /init.mapphone_cdma.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_cdma.rc.new0
+			/sbin/bbx mv /init.mapphone_cdma.rc.new0 /init.mapphone_cdma.rc
+			/sbin/bbx cat /init.mapphone_umts.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_umts.rc.new0
+			/sbin/bbx mv /init.mapphone_umts.rc.new0 /init.mapphone_umts.rc
 
 			# extract stock modified rootfs files
 			if [ -d "$RECOVERY_DIR/rootfs" ]; then

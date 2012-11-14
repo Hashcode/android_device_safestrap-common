@@ -1,6 +1,10 @@
 LOCAL_PATH := $(call my-dir)
 splash_local_path := $(LOCAL_PATH)
 
+ifeq ($(TWRP_EVENT_LOGGING), true)
+  LOCAL_CFLAGS += -D_EVENT_LOGGING
+endif
+
 splash_sources := \
     splashmenu.c \
     default_splashmenu_ui.c \

@@ -8,7 +8,7 @@ BLOCKNAME_DIR=$BLOCK_DIR/platform/omap/omap_hsmmc.1/by-name
 # SS3 Setup
 SYS_MNT=/s2
 USER_MNT=/datamedia
-IMG_FSTYPE=ext4
+IMG_TYPE=ext4
 SS_MNT=/ss
 
 RECOVERY_DIR=/system/etc/safestrap
@@ -61,7 +61,7 @@ fi
 if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	# setup loopback
 	/sbin/bbx losetup $BLOCK_DIR/loop-userdata $SS_DIR/$SLOT_LOC/userdata.img
-	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop-userdata $USER_MNT
+	/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-userdata $USER_MNT
 	if [ -f $USER_MNT/.recovery_mode ]; then
 		/sbin/bbx rm $USER_MNT/.recovery_mode
 		ALT_SYSTEM_MODE="2"
@@ -82,17 +82,10 @@ if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_M
 	/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
 	/sbin/bbx chmod 750 /sbin/*
 
-	# filesystem cleanup
+	# pre-cleanup
 	/sbin/bbx rm /etc
 	/sbin/bbx mkdir /etc
 	/sbin/bbx chmod 755 /etc
-	/sbin/bbx rm /sdcard
-	/sbin/bbx rm /sdcard-ext
-	/sbin/bbx rm -rf /mnt
-	/sbin/bbx rm /vendor
-	/sbin/bbx rm /d
-	/sbin/bbx rm /tmp
-	/sbin/bbx mkdir /tmp
 
 	# move bins out of the way
 	/sbin/bbx mv /sbin/adbd /sbin/adbd.old
@@ -134,6 +127,15 @@ if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_M
 
 	/sbin/bbs sleep 1
 
+	# filesystem cleanup
+	/sbin/bbx rm /sdcard
+	/sbin/bbx rm /sdcard-ext
+	/sbin/bbx rm -rf /mnt
+	/sbin/bbx rm /vendor
+	/sbin/bbx rm /d
+	/sbin/bbx rm /tmp
+	/sbin/bbx mkdir /tmp
+
 	/sbin/taskset -p -c 0 1
 	/sbin/bbx sync
 	/sbin/taskset -c 0 /sbin/2nd-init
@@ -147,7 +149,7 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 
 	# setup loopback
 	/sbin/bbx losetup $BLOCK_DIR/loop-system $SS_DIR/$SLOT_LOC/system.img
-	/sbin/bbx mount -t $IMG_FSTYPE $BLOCK_DIR/loop-system $SYS_MNT
+	/sbin/bbx mount -t $IMG_TYPE $BLOCK_DIR/loop-system $SYS_MNT
 
 	# check for hijacks, and remove
 	if [ -f "$SYS_MNT/bin/$HIJACK_BIN.bin" ]; then

@@ -28,7 +28,7 @@ endif
 #Remove the # from the line below to enable event logging
 #TWRP_EVENT_LOGGING := true
 ifeq ($(TWRP_EVENT_LOGGING), true)
-#LOCAL_CFLAGS += -D_EVENT_LOGGING
+  LOCAL_CFLAGS += -D_EVENT_LOGGING
 endif
 
 ifeq ($(TARGET_RECOVERY_PIXEL_FORMAT),"RGBX_8888")
