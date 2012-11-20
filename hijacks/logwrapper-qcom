@@ -7,7 +7,7 @@ BLOCKNAME_DIR=$BLOCK_DIR/platform/msm_sdcc.1/by-name
 
 # SS3 Setup
 SYS_MNT=/s2
-USER_MNT=/u2
+USER_MNT=/datamedia
 IMG_TYPE=ext4
 SS_MNT=/ss
 SS_PART=userdata
@@ -193,18 +193,6 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 				exit
 			fi
 
-			# adjust stock init.rc file to include /sbin/fixboot.sh
-			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
-			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
-			/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
-			/sbin/bbx mv /init.rc /init.rc.old
-			/sbin/bbx mv /init.rc.new2 /init.rc
-			/sbin/bbx rm /init.rc.new*
-
-			# adjust init.<hardware>.rc for where to mount /sdcard
-			/sbin/bbx cat /init.qcom.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.qcom.rc.new0
-			/sbin/bbx mv /init.qcom.rc.new0 /init.qcom.rc
-
 			if [ -d "$RECOVERY_DIR/rootfs" ]; then
 				if [ -f "$RECOVERY_DIR/rootfs/sbin/adbd" ]; then
 					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
@@ -225,6 +213,17 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 				fi
 				/sbin/bbx cp -R $SYS_MNT/etc/rootfs/* /
 			fi
+
+			# adjust stock init.rc file to include /sbin/fixboot.sh
+			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
+			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.rc.new3
+			/sbin/bbx mv /init.rc /init.rc.old
+			/sbin/bbx mv /init.rc.new3 /init.rc
+			/sbin/bbx rm /init.rc.new*
+
+			# adjust init.<hardware>.rc for where to mount /sdcard
+			/sbin/bbx cat /init.qcom.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.qcom.rc.new0
+			/sbin/bbx mv /init.qcom.rc.new0 /init.qcom.rc
 
 			# reset permissions
 			/sbin/bbx chmod -R 750 /sbin/*
@@ -247,8 +246,8 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 			# mount point / symlink cleanup
 			/sbin/bbx rm /sdcard
-			/sbin/bbx rmdir /mnt/sdcard
-			/sbin/bbx rmdir /mnt/external1
+			/sbin/bbx rmdir -rf /mnt
+#			/sbin/bbx rmdir /mnt/external1
 
 			/sbin/taskset -p -c 0 1
 			/sbin/bbx sync

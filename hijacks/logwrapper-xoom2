@@ -189,19 +189,6 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 				exit
 			fi
 
-			# adjust stock init.rc file to include /sbin/fixboot.sh
-			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
-			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
-			/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
-			/sbin/bbx mv /init.rc /init.rc.old
-			/sbin/bbx mv /init.rc.new2 /init.rc
-			/sbin/bbx rm /init.rc.new*
-
-			/sbin/bbx cat /init.mapphone_cdma.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_cdma.rc.new0
-			/sbin/bbx mv /init.mapphone_cdma.rc.new0 /init.mapphone_cdma.rc
-			/sbin/bbx cat /init.mapphone_umts.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_umts.rc.new0
-			/sbin/bbx mv /init.mapphone_umts.rc.new0 /init.mapphone_umts.rc
-
 			# extract stock modified rootfs files
 			if [ -d "$RECOVERY_DIR/rootfs" ]; then
 				if [ -f "$RECOVERY_DIR/rootfs/sbin/adbd" ]; then
@@ -223,6 +210,19 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 				fi
 				/sbin/bbx cp -R $SYS_MNT/etc/rootfs/* /
 			fi
+
+			# adjust stock init.rc file to include /sbin/fixboot.sh
+			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
+			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
+			/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
+			/sbin/bbx mv /init.rc /init.rc.old
+			/sbin/bbx mv /init.rc.new2 /init.rc
+			/sbin/bbx rm /init.rc.new*
+
+			/sbin/bbx cat /init.mapphone_cdma.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_cdma.rc.new0
+			/sbin/bbx mv /init.mapphone_cdma.rc.new0 /init.mapphone_cdma.rc
+			/sbin/bbx cat /init.mapphone_umts.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_umts.rc.new0
+			/sbin/bbx mv /init.mapphone_umts.rc.new0 /init.mapphone_umts.rc
 
 			# reset permissions
 			/sbin/bbx chmod -R 750 /sbin/*

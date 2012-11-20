@@ -182,6 +182,17 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 		exit
 	fi
 
+	# if there's a ramdisk then extract it
+	if [ -d "$SYS_MNT/etc/rootfs" ]; then
+		if [ -f "$SYS_MNT/etc/rootfs/sbin/adbd" ]; then
+			/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+		fi
+		if [ -f "$SYS_MNT/etc/rootfs/init" ]; then
+			/sbin/bbx mv /init /init.old
+		fi
+		/sbin/bbx cp -R $SYS_MNT/etc/rootfs/* /
+	fi
+
 	# adjust stock init.rc file to include /sbin/fixboot.sh
 	/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
 	/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
@@ -195,17 +206,6 @@ if [ "$ALT_SYSTEM_MODE" = "1" ]; then
 	/sbin/bbx mv /init.bowser.rc.new0 /init.bowser.rc
 	/sbin/bbx cat /init.omap4blazeboard.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.omap4blazeboard.rc.new0
 	/sbin/bbx mv /init.omap4blazeboard.rc.new0 /init.omap4blazeboard.rc
-
-	# if there's a ramdisk then extract it
-	if [ -d "$SYS_MNT/etc/rootfs" ]; then
-		if [ -f "$SYS_MNT/etc/rootfs/sbin/adbd" ]; then
-			/sbin/bbx mv /sbin/adbd /sbin/adbd.old
-		fi
-		if [ -f "$SYS_MNT/etc/rootfs/init" ]; then
-			/sbin/bbx mv /init /init.old
-		fi
-		/sbin/bbx cp -R $SYS_MNT/etc/rootfs/* /
-	fi
 
 	# reset permissions
 	/sbin/bbx chmod -R 750 /sbin/*
