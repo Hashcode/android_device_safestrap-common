@@ -213,10 +213,8 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 			# adjust stock init.rc file to include /sbin/fixboot.sh
 			/sbin/bbx cat /init.rc | /sbin/bbx sed "s/on init/on init\nexec \/sbin\/fixboot.sh/" > /init.rc.new0
-			/sbin/bbx cat /init.rc.new0 | /sbin/bbx sed "s/mount cgroup none/#mount cgroup none/" > /init.rc.new1
-			/sbin/bbx cat /init.rc.new1 | /sbin/bbx sed "s/mount tmpfs tmpfs/#mount tmpfs tmpfs/" > /init.rc.new2
 			/sbin/bbx mv /init.rc /init.rc.old
-			/sbin/bbx mv /init.rc.new2 /init.rc
+			/sbin/bbx mv /init.rc.new0 /init.rc
 			/sbin/bbx rm /init.rc.new*
 
 			/sbin/bbx cat /init.mapphone_cdma.rc | /sbin/bbx sed "s/service sdcard \/system\/bin\/sdcard \/data\/media/service sdcard \/system\/bin\/sdcard \/datamedia\/media/" > /init.mapphone_cdma.rc.new0
