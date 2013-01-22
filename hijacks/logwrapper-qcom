@@ -1,6 +1,7 @@
 #!/system/bin/sh
 # By: Hashcode
-# Last Editted: 11/07/2012
+# Last Editted: 12/28/2012
+# Added Stock Hijack
 PATH=/system/xbin:/system/bin:/sbin
 BLOCK_DIR=/dev/block
 BLOCKNAME_DIR=$BLOCK_DIR/platform/msm_sdcc.1/by-name
@@ -21,6 +22,7 @@ CHECK_BOOTMODE="bp-tools"
 HIJACK_BIN=logwrapper
 
 
+if [ ! -f "/.safestraped" ]; then
 if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 	# remount root as rw
 	/system/etc/safestrap/bbx mount -o remount,rw rootfs
@@ -153,6 +155,8 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 
 		# check for active virtual system
 		if [ "$ALT_SYSTEM_MODE" = "1" ]; then
+			/sbin/bbx touch /.safestrapped
+
 			/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
 			/sbin/bbx chmod 750 /sbin/*
 
@@ -247,7 +251,44 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 			# mount point / symlink cleanup
 			/sbin/bbx rm /sdcard
 			/sbin/bbx rmdir -rf /mnt
-#			/sbin/bbx rmdir /mnt/external1
+
+			/sbin/taskset -p -c 0 1
+			/sbin/bbx sync
+			/sbin/taskset -c 0 /sbin/2nd-init
+			exit
+		fi
+
+		# check for stock system bootstrap
+		if [ -d "/system/etc/rootfs" ]; then
+			/sbin/bbx touch /.safestrapped
+
+			/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+			/sbin/bbx chmod 750 /sbin/*
+
+			if [ -f "/system/etc/rootfs/sbin/adbd" ]; then
+				/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+			fi
+			if [ -f "/system/etc/rootfs/init" ]; then
+				/sbin/bbx mv /init /init.old
+			fi
+			/sbin/bbx cp -R $SYS2_MNT/etc/rootfs/* /
+
+			# reset permissions
+			/sbin/bbx chmod -R 750 /sbin/*
+			/sbin/bbx chmod 755 /init
+			/sbin/bbx chmod 755 /charger
+			/sbin/bbx chmod 644 /default.prop
+			/sbin/bbx chmod 755 /*.rc
+			/sbin/bbx chmod 755 /*.sh
+
+			# unmount old /system
+			/sbin/bbx umount -l /system
+
+			/sbin/hijack.killall
+
+			# mount point / symlink cleanup
+			/sbin/bbx rm /sdcard
+			/sbin/bbx rmdir -rf /mnt
 
 			/sbin/taskset -p -c 0 1
 			/sbin/bbx sync
@@ -259,6 +300,7 @@ if [ "$3" = "$BLOCKNAME_DIR/userdata" ]; then
 		/sbin/bbx umount $SS_MNT
 		/sbin/bbx umount $USER_MNT
 	fi
+fi
 fi
 
 /system/bin/$HIJACK_BIN.bin "$@"
